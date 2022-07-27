@@ -6,6 +6,7 @@ import soot.BodyTransformer;
 import soot.PackManager;
 import soot.Transform;
 import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.tools.CFGViewer;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -21,7 +22,11 @@ public class SootTest {
             sb.append(jarpath).append(';');
         }
         String classPath = sb.toString();
-        System.out.println("Working Directory = " + System.getProperty("user.dir"));
+        CFGViewer viewer = new CFGViewer();
+        Transform cfgTransform = new Transform("jtp.printcfg", viewer);
+        cfgTransform.setDeclaredOptions("enabled alt-class-path graph-type ir multipages brief ");
+        cfgTransform.setDefaultOptions("enabled alt-class-path: graph-type:BriefUnitGraph ir:jimple multipages:false  brief:false ");
+        PackManager.v().getPack("jtp").add(cfgTransform);
         PackManager.v().getPack("jtp").add(
             new Transform("jtp.myTransform", new BodyTransformer() {
                 @Override
@@ -35,11 +40,11 @@ public class SootTest {
 //            "target/webapp-0.0.1-SNAPSHOT/WEB-INF/classes",
 //            "-process-jar-dir", "target/webapp-0.0.1-SNAPSHOT/WEB-INF/lib",
 //            "com.sjtu.sw.webapp.controller.FileController"});
-        soot.Main.main(new String[]{ "-v", "-cp", classPath,
+        soot.Main.main(new String[]{ "-cp", classPath,
             "-process-dir",
             "target/webapp-0.0.1-SNAPSHOT/WEB-INF/classes",
-            "-process-jar-dir", "target/webapp-0.0.1-SNAPSHOT/WEB-INF/lib",
-            "-dump-cfg", "wjtp",
+//            "-process-jar-dir", "target/webapp-0.0.1-SNAPSHOT/WEB-INF/lib",
+//            "-f", "J", "-v",
             "com.sjtu.sw.webapp.controller.FileController"});
     }
 }

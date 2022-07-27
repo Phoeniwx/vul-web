@@ -1,9 +1,13 @@
 package com.sjtu.sw.webapp.flow;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.Local;
 import soot.Unit;
 import soot.Value;
 import soot.ValueBox;
+import soot.jimple.ParameterRef;
+import soot.jimple.internal.JIdentityStmt;
 import soot.toolkits.graph.DominatorsFinder;
 import soot.toolkits.graph.MHGDominatorsFinder;
 import soot.toolkits.graph.UnitGraph;
@@ -17,9 +21,14 @@ import java.util.Map;
 //public class ForwardAnalyzer {
 //}
 
+
 public class ForwardAnalyzer extends ForwardFlowAnalysis<Unit, FlowSet<Value> > {
+    private static final Logger logger = LoggerFactory.getLogger(ForwardAnalyzer.class);
+
     private static final FlowSet<Value> EMPTY_SET = new ArraySparseSet<Value>();
     private final Map<Unit, FlowSet<Value> > unitToGenerateSet;
+    private Unit taintBegin;
+    private FlowSet<Value> taintedValues = new ArraySparseSet<>();
 
     public ForwardAnalyzer(UnitGraph graph) {
         super(graph);
@@ -28,6 +37,21 @@ public class ForwardAnalyzer extends ForwardFlowAnalysis<Unit, FlowSet<Value> > 
         DominatorsFinder<Unit> df = new MHGDominatorsFinder<Unit>(graph);
 
         for (Unit s : graph) {
+            boolean found = false;
+            for(ValueBox box:s.getUseBoxes()) {
+                Value val = box.getValue();
+                if (val instanceof ParameterRef && s instanceof JIdentityStmt &&
+                    val.getType().toString().equals("org.springframework.web.multipart.MultipartFile")) {
+                    found = true;
+//                    logger.debug(s + s.getClass().toString());
+                }
+            }
+            if (found) {
+                taintBegin = s;
+                taintedValues.add(((JIdentityStmt) s).getLeftOp());
+                break;
+            }
+
             FlowSet<Value> genSet = EMPTY_SET.clone();
             for (Unit dom : df.getDominators(s)) {
                 for (ValueBox box : dom.getDefBoxes()) {
@@ -53,7 +77,7 @@ public class ForwardAnalyzer extends ForwardFlowAnalysis<Unit, FlowSet<Value> > 
      **/
     @Override
     protected FlowSet<Value> entryInitialFlow() {
-        return EMPTY_SET.clone();
+        return taintedValues.clone();
     }
 
     /**
