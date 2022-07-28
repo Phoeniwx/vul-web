@@ -67,17 +67,18 @@ public class ForwardAnalyzer extends ForwardFlowAnalysis<Unit, FlowSet<Value> > 
         doAnalysis();
     }
 
+    /**
+     * IN(Start) is the empty set
+     **/
     @Override
     protected FlowSet<Value> newInitialFlow() {
         return EMPTY_SET.clone();
     }
 
-    /**
-     * IN(Start) is the empty set
-     **/
+
     @Override
     protected FlowSet<Value> entryInitialFlow() {
-        return taintedValues.clone();
+        return EMPTY_SET.clone();
     }
 
     /**
@@ -85,8 +86,15 @@ public class ForwardAnalyzer extends ForwardFlowAnalysis<Unit, FlowSet<Value> > 
      **/
     @Override
     protected void flowThrough(FlowSet<Value> in, Unit unit, FlowSet<Value> out) {
-        // perform generation (kill set is empty)
-        in.union(unitToGenerateSet.get(unit), out);
+        if (unit.equals(taintBegin)) {
+            in.union(EMPTY_SET, out);
+            return;
+        }
+        if (in.isEmpty()) {
+            out.clear();
+            return;
+        }
+        for (Value taint_v: in) {}
     }
 
     /**
