@@ -6,7 +6,7 @@ import soot.Local;
 import soot.Unit;
 import soot.Value;
 import soot.ValueBox;
-import soot.jimple.ParameterRef;
+import soot.jimple.*;
 import soot.jimple.internal.JIdentityStmt;
 import soot.toolkits.graph.DominatorsFinder;
 import soot.toolkits.graph.MHGDominatorsFinder;
@@ -15,7 +15,9 @@ import soot.toolkits.scalar.ArraySparseSet;
 import soot.toolkits.scalar.FlowSet;
 import soot.toolkits.scalar.ForwardFlowAnalysis;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 //public class ForwardAnalyzer {
@@ -87,14 +89,35 @@ public class ForwardAnalyzer extends ForwardFlowAnalysis<Unit, FlowSet<Value> > 
     @Override
     protected void flowThrough(FlowSet<Value> in, Unit unit, FlowSet<Value> out) {
         if (unit.equals(taintBegin)) {
-            in.union(EMPTY_SET, out);
+            logger.debug("Start tainting");
+            in.union(taintedValues, out);
             return;
         }
         if (in.isEmpty()) {
             out.clear();
             return;
         }
-        for (Value taint_v: in) {}
+        in.union(EMPTY_SET, out);
+        boolean isTainted = false;
+//        logger.debug("Unit: "+unit+unit.getClass());
+
+        for ( ValueBox box:unit.getUseBoxes()) {
+            Value val = box.getValue();
+            if (hasTaint(val, in)) {
+                logger.debug(String.format("Tainted Value: %s %s", val, val.getClass()));
+                isTainted = true;
+//                break;
+            }
+        }
+        if (isTainted) {
+//            logger.debug("Tainted Unit: "+unit+unit.getClass());
+            if (unit instanceof DefinitionStmt) {
+                Value left = ((DefinitionStmt) unit).getLeftOp();
+                out.add(left);
+//                logger.debug("Add taint: "+left+left.getClass());
+            }
+        }
+
     }
 
     /**
@@ -102,11 +125,31 @@ public class ForwardAnalyzer extends ForwardFlowAnalysis<Unit, FlowSet<Value> > 
      **/
     @Override
     protected void merge(FlowSet<Value> in1, FlowSet<Value> in2, FlowSet<Value> out) {
-        in1.intersection(in2, out);
+        in1.union(in2, out);
     }
 
     @Override
     protected void copy(FlowSet<Value> source, FlowSet<Value> dest) {
         source.copy(dest);
+    }
+
+    private boolean hasTaint(Value val, FlowSet<Value> taints) {
+        if (taints.contains(val)) {
+            return true;
+        }
+        if (val instanceof Expr) {
+            for (ValueBox box: val.getUseBoxes()) {
+                if (taints.contains(box.getValue())) {
+                    return true;
+                }
+            }
+        }
+
+        for (Value t: taints) {
+            if (val.toString().contains(t.toString())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
