@@ -2,10 +2,7 @@ package com.sjtu.sw.webapp.flow;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import soot.Local;
-import soot.Unit;
-import soot.Value;
-import soot.ValueBox;
+import soot.*;
 import soot.jimple.*;
 import soot.jimple.internal.JIdentityStmt;
 import soot.toolkits.graph.DominatorsFinder;
@@ -99,22 +96,38 @@ public class ForwardAnalyzer extends ForwardFlowAnalysis<Unit, FlowSet<Value> > 
         }
         in.union(EMPTY_SET, out);
         boolean isTainted = false;
-//        logger.debug("Unit: "+unit+unit.getClass());
 
         for ( ValueBox box:unit.getUseBoxes()) {
             Value val = box.getValue();
             if (hasTaint(val, in)) {
-                logger.debug(String.format("Tainted Value: %s %s", val, val.getClass()));
+//                logger.debug(String.format("Tainted Value: %s %s", val, val.getClass()));
                 isTainted = true;
 //                break;
             }
         }
         if (isTainted) {
-//            logger.debug("Tainted Unit: "+unit+unit.getClass());
+            logger.debug(String.format("Tainted Unit: %s %s", unit, unit.getClass()));
             if (unit instanceof DefinitionStmt) {
                 Value left = ((DefinitionStmt) unit).getLeftOp();
                 out.add(left);
-//                logger.debug("Add taint: "+left+left.getClass());
+                taintedValues.add(left);
+//                logger.debug(String.format("Add taint: %s %s", left, left.getClass()));
+            }
+            if (unit instanceof InvokeStmt) {
+                for(ValueBox box:unit.getUseBoxes()) {
+                    Value vf = box.getValue();
+                    if (vf instanceof InvokeExpr) {
+                        SootMethod method = ((InvokeExpr) vf).getMethod();
+                        String className = method.getDeclaringClass().getName();
+                        String methodName = method.getName();
+                        if (className.equals("java.nio.file.Files") && methodName.equals("copy")) {
+                            Integer line = unit.getJavaSourceStartLineNumber();
+
+                            logger.debug(String.format("Find upload point: %d", line));
+                        }
+                        logger.debug(className + methodName);
+                    }
+                }
             }
         }
 
