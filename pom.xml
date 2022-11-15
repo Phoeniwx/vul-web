@@ -11,7 +11,7 @@
 	<groupId>com.sjtu.sw</groupId>
 	<artifactId>webapp</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 	<name>webapp</name>
 	<description>Demo project for Spring Boot</description>
 	<properties>
@@ -46,6 +46,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>1.21</version>
 		</dependency>
 <!--		<dependency>-->
 <!--    		<groupId>org.soot-oss</groupId>-->

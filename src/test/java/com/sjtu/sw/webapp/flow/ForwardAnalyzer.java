@@ -120,12 +120,11 @@ public class ForwardAnalyzer extends ForwardFlowAnalysis<Unit, FlowSet<Value> > 
                         SootMethod method = ((InvokeExpr) vf).getMethod();
                         String className = method.getDeclaringClass().getName();
                         String methodName = method.getName();
+                        logger.debug(className + methodName);
                         if (className.equals("java.nio.file.Files") && methodName.equals("copy")) {
                             Integer line = unit.getJavaSourceStartLineNumber();
-
                             logger.debug(String.format("Find upload point: %d", line));
                         }
-                        logger.debug(className + methodName);
                     }
                 }
             }
